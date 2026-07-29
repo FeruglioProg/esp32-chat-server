@@ -3,7 +3,8 @@ const http = require("http");
 const WebSocket = require("ws");
 
 const app = express();
-app.use(express.text());
+app.use(express.json());
+app.use(express.text({ type: "text/plain" }));
 
 const server = http.createServer(app);
 
@@ -33,12 +34,25 @@ app.get("/", (req, res) => {
 
 app.post("/mensaje", (req, res) => {
 
-    if (esp32) {
-        esp32.send(req.body);
-        res.send("Mensaje enviado");
+    let mensaje = "";
+
+    if (typeof req.body === "string") {
+        mensaje = req.body;
+    } else if (req.body.texto) {
+        mensaje = req.body.texto;
+    } else if (req.body.message) {
+        mensaje = req.body.message;
     } else {
-        res.status(503).send("ESP32 no conectado");
+        mensaje = JSON.stringify(req.body);
     }
+
+    if (!esp32) {
+        return res.status(503).send("ESP32 no conectado");
+    }
+
+    esp32.send(mensaje);
+
+    res.send("Mensaje enviado");
 
 });
 
