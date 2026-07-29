@@ -38,6 +38,8 @@ app.post("/mensaje", (req, res) => {
 
     if (typeof req.body === "string") {
         mensaje = req.body;
+    } else if (req.body.mensaje) {
+        mensaje = req.body.mensaje;
     } else if (req.body.texto) {
         mensaje = req.body.texto;
     } else if (req.body.message) {
@@ -47,12 +49,18 @@ app.post("/mensaje", (req, res) => {
     }
 
     if (!esp32) {
-        return res.status(503).send("ESP32 no conectado");
+        return res.status(503).json({
+            ok: false,
+            error: "ESP32 no conectado"
+        });
     }
 
     esp32.send(mensaje);
 
-    res.send("Mensaje enviado");
+    return res.json({
+        ok: true,
+        mensaje: "Mensaje enviado"
+    });
 
 });
 
