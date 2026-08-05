@@ -237,12 +237,30 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
         console.log("Transcripción:", texto);
 
 
+        fs.unlink(req.file.path, () => {});
+
+
+        if(!texto || !texto.trim())
+        {
+
+            console.log("Transcripción vacía, no se envía a BuilderBot");
+
+            return res.json({
+
+                ok:true,
+
+                mensaje:"Sin voz reconocida, no se envió nada",
+
+                texto: ""
+
+            });
+
+        }
+
+
         await enviarABuilderBot(texto);
 
         console.log("Enviado a BuilderBot");
-
-
-        fs.unlink(req.file.path, () => {});
 
 
         return res.json({
