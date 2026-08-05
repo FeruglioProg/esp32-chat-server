@@ -1,19 +1,32 @@
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
+const multer = require("multer");
+
 
 const app = express();
+
 app.use(express.json());
 app.use(express.text({ type: "text/plain" }));
 
+
+// Configuración para recibir archivos
+const upload = multer({
+    dest: "uploads/"
+});
+
+
 const server = http.createServer(app);
+
 
 const wss = new WebSocket.Server({
     server,
     path: "/ws"
 });
 
+
 let esp32 = null;
+
 
 wss.on("connection", (ws) => {
 
@@ -21,51 +34,129 @@ wss.on("connection", (ws) => {
 
     esp32 = ws;
 
+
     ws.on("close", () => {
+
         console.log("ESP32 desconectado");
+
         esp32 = null;
+
     });
 
 });
 
+
+
 app.get("/", (req, res) => {
+
     res.send("Servidor funcionando");
+
 });
+
+
 
 app.post("/mensaje", (req, res) => {
 
     let mensaje = "";
 
+
     if (typeof req.body === "string") {
+
         mensaje = req.body;
+
     } else if (req.body.mensaje) {
+
         mensaje = req.body.mensaje;
+
     } else if (req.body.texto) {
+
         mensaje = req.body.texto;
+
     } else if (req.body.message) {
+
         mensaje = req.body.message;
+
     } else {
+
         mensaje = JSON.stringify(req.body);
+
     }
 
+
+
     if (!esp32) {
+
         return res.status(503).json({
             ok: false,
             error: "ESP32 no conectado"
         });
+
     }
+
+
 
     esp32.send(mensaje);
 
+
+
     return res.json({
+
         ok: true,
+
         mensaje: "Mensaje enviado"
+
     });
+
 
 });
 
+
+
+
+// NUEVO: recibir audio del ESP32
+
+app.post("/audio", upload.single("audio"), (req, res) => {
+
+
+    if(!req.file)
+    {
+
+        return res.status(400).json({
+
+            ok:false,
+
+            error:"No se recibió audio"
+
+        });
+
+    }
+
+
+
+    console.log("Audio recibido:");
+
+    console.log(req.file);
+
+
+
+    return res.json({
+
+        ok:true,
+
+        mensaje:"Audio recibido"
+
+    });
+
+
+});
+
+
+
 const PORT = process.env.PORT || 3000;
 
+
 server.listen(PORT, () => {
+
     console.log("Servidor iniciado");
+
 });
